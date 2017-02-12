@@ -87,3 +87,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Intellij PyCharm settings
+.idea
+
+# Project files
+input/
+output/
