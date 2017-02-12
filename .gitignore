@@ -94,3 +94,6 @@ ENV/
 # Project files
 input/
 output/
+
+OS specific files
+.DS_Store
