@@ -26,7 +26,7 @@ if __name__ == '__main__':
     diagonals = ['hist', 'kde']
     for d in diagonals:
         plt.clf()  # Clear any existing figure
-        scatter_axes = scatter_matrix(sample_df, diagonal=d, **scatter_kwds)
+        axes = scatter_matrix(sample_df, diagonal=d, **scatter_kwds)
         scatter_matrix_fp_fmt = 'output/scatter_matrix_{}.png'
         plt.savefig(scatter_matrix_fp_fmt.format(d))
     # Evaluation: Dimension 9 shows a curved relationship with dimension 0
@@ -82,21 +82,30 @@ if __name__ == '__main__':
 
     # PCA scatterplot
     nsamples_pca = nsamples * 10
-    pca_df = pd.DataFrame(data=pca.fit_transform(X), index=df.index)
+    pca_df = pd.DataFrame(data=pca.transform(X), index=df.index)
     pca_df[data.DEPENDENT] = y
     plt.clf()  # Clear any existing figure
     pca_sample_df = pca_df.sample(nsamples_pca)
     for d in diagonals:
-        scatter_axes = scatter_matrix(pca_sample_df, diagonal=d, **scatter_kwds)
+        axes = scatter_matrix(pca_sample_df, diagonal=d, **scatter_kwds)
         plt.savefig(scatter_matrix_fp_fmt.format('pca_' + d))
 
     # Kernel PCA feature reduction
-    kernels = ['linear', 'poly', 'rbf', 'sigmoid', 'cosine']
+    kernels = [
+        # 'linear',
+        # 'poly',
+        'rbf',
+        # 'sigmoid',
+        # 'cosine'
+    ]
     kernel_pcas = {}
     # Kernel PCAs are compute and memory intensive so fit on a random sample
-    X_sample = X.sample(n=10000)
+    X_sample = X.sample(n=1000)
     for kernel in kernels:
-        # pca = KernelPCA(kernel=kernel)
-        # pca.fit(X_sample)
+        kpca = KernelPCA(kernel=kernel)
+        X_kernel_pca = kpca.fit_transform(X_sample)
+        for d in diagonals:
+            axes = scatter_matrix(X_kernel_pca, diagonal=d, **scatter_kwds)
+            plt.savefig(scatter_matrix_fp_fmt.format(kernel + '_pca_' + d))
         # kernel_pcas[kernel] = pca
         print(kernel, dt.datetime.now())
