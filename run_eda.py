@@ -1,5 +1,6 @@
 """Exploratory data analysis"""
 import datetime as dt
+import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -77,7 +78,8 @@ if __name__ == '__main__':
     X = df[data.INDEPENDENTS]
     y = df[data.DEPENDENT]
     pca.fit(X)
-    print(pca.explained_variance_ratio_)
+    pca_var_msg_fmt = 'PCA explained variance ratio: {}'
+    print(pca_var_msg_fmt.format(pca.explained_variance_ratio_))
     # Evaluation: There is one eigenvector that explains almost all variance
 
     # PCA scatterplot
@@ -87,25 +89,33 @@ if __name__ == '__main__':
     plt.clf()  # Clear any existing figure
     pca_sample_df = pca_df.sample(nsamples_pca)
     for d in diagonals:
+        plt.clf()  # Clear any existing figure
         axes = scatter_matrix(pca_sample_df, diagonal=d, **scatter_kwds)
         plt.savefig(scatter_matrix_fp_fmt.format('pca_' + d))
 
     # Kernel PCA feature reduction
     kernels = [
-        # 'linear',
-        # 'poly',
+        'linear',
+        'poly',
         'rbf',
-        # 'sigmoid',
-        # 'cosine'
+        'sigmoid',
+        'cosine',
     ]
-    kernel_pcas = {}
     # Kernel PCAs are compute and memory intensive so fit on a random sample
     X_sample = X.sample(n=1000)
+    print('Kernel PCA sample shape: {}'.format(X_sample.shape))
     for kernel in kernels:
-        kpca = KernelPCA(kernel=kernel)
-        X_kernel_pca = kpca.fit_transform(X_sample)
+        kpca = KernelPCA(n_components=3, kernel=kernel, n_jobs=4)
+        start_time = time.perf_counter()
+        kpca.fit(X_sample)
+        end_time = time.perf_counter()
+        print('Time to fit: {:.1f}s'.format(end_time - start_time))
+        kpca_df = pd.DataFrame(data=kpca.transform(X_sample),
+                               index=X_sample.index)
+        kpca_df[data.DEPENDENT] = y
         for d in diagonals:
-            axes = scatter_matrix(X_kernel_pca, diagonal=d, **scatter_kwds)
+            plt.clf()  # Clear any existing figure
+            axes = scatter_matrix(kpca_df, diagonal=d, **scatter_kwds)
             plt.savefig(scatter_matrix_fp_fmt.format(kernel + '_pca_' + d))
         # kernel_pcas[kernel] = pca
         print(kernel, dt.datetime.now())
