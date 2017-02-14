@@ -1,7 +1,9 @@
 """Fit a variety of models to the data"""
 import datetime as dt
 import pickle
+import time
 from multiprocessing import cpu_count
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,7 +12,6 @@ from sklearn.decomposition import KernelPCA, PCA
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 from sklearn.linear_model import ElasticNetCV, LassoCV, LinearRegression, \
     RANSACRegressor, RidgeCV, SGDRegressor
-from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
@@ -52,14 +53,14 @@ def scaled_pipelines():
     model_steps = [
         LinearRegression(),
         [PolynomialFeatures(degree=2), LinearRegression()],
-        # [PolynomialFeatures(degree=3), LinearRegression()],
-        # RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
+        [PolynomialFeatures(degree=3), LinearRegression()],
+        RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
         # RANSACRegressor with polynomial regression?
-        # RidgeCV(alphas=alphas),
-        # LassoCV(),  # Alphas set automatically by default
+        RidgeCV(alphas=alphas),
+        LassoCV(),  # Alphas set automatically by default
         ElasticNetCV(l1_ratio=0.5),  # Same as default
-        [PolynomialFeatures(degree=2), ElasticNetCV(l1_ratio=0.5)]
-        # SGDRegressor(),
+        [PolynomialFeatures(degree=2), ElasticNetCV(l1_ratio=0.5)],
+        SGDRegressor(),
     ]
     # Pipelines
     pipelines = []
@@ -123,7 +124,7 @@ def unscaled_pipelines():
     models = [
         DecisionTreeRegressor(max_depth=3, random_state=_RANDOM_STATE),
         RandomForestRegressor(**random_forest_kwargs),
-        # GradientBoostingRegressor(**gradient_boost_kwargs),
+        GradientBoostingRegressor(**gradient_boost_kwargs),
     ]
     pipelines = []
     for m in models:
@@ -160,6 +161,7 @@ def sampled_train_test_split(X_train, X_test, y_train, y_test, n=1000):
 
 
 def persist_pipelines(pipelines):
+    Path('models').mkdir(exist_ok=True)
     fp_fmt = 'models/{}-{:%y-%m-%d %H:%M}.pkl'
     now = dt.datetime.now()
     for pipe in pipelines:
@@ -177,19 +179,23 @@ if __name__ == '__main__':
     pipes = scaled_pipes + unscaled_pipes
     for scaled_pipe in pipes:
         print(utils.model_name(scaled_pipe))
+        start_time = time.perf_counter()
         fit_evaluate(*scaled_train_test_args, scaled_pipe)
-        print(dt.datetime.now())
+        end_time = time.perf_counter()
+        print('Time elapsed: {:.1f}s'.format(end_time - start_time))
 
     sample_train_test_args = sampled_train_test_split(*scaled_train_test_args,
                                                       n=10000)
     sample_pipes = sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
     for sample_pipe in sample_pipes:
         print(utils.model_name(sample_pipe))
+        start_time = time.perf_counter()
         fit_evaluate(*sample_train_test_args, sample_pipe)
-        print(dt.datetime.now())
+        end_time = time.perf_counter()
+        print('Time elapsed: {:.1f}s'.format(end_time - start_time))
 
     # Persist models
-    # persist_pipelines(scaled_pipes + unscaled_pipes)
+    persist_pipelines(pipes)
 
     if _PCA_KWARGS['n_components'] == 1:
         X_train = scaled_train_test_args[0]

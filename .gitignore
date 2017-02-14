@@ -93,6 +93,7 @@ ENV/
 
 # Project files
 input/
+models/
 output/
 
 OS specific files
