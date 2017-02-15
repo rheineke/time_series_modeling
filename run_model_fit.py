@@ -53,14 +53,14 @@ def scaled_pipelines():
     model_steps = [
         LinearRegression(),
         [PolynomialFeatures(degree=2), LinearRegression()],
-        [PolynomialFeatures(degree=3), LinearRegression()],
-        RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
+        # [PolynomialFeatures(degree=3), LinearRegression()],
+        # RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
         # RANSACRegressor with polynomial regression?
-        RidgeCV(alphas=alphas),
-        LassoCV(),  # Alphas set automatically by default
-        ElasticNetCV(l1_ratio=0.5),  # Same as default
-        [PolynomialFeatures(degree=2), ElasticNetCV(l1_ratio=0.5)],
-        SGDRegressor(),
+        # RidgeCV(alphas=alphas),
+        # LassoCV(),  # Alphas set automatically by default
+        # ElasticNetCV(l1_ratio=0.5),  # Same as default
+        # [PolynomialFeatures(degree=2), ElasticNetCV(l1_ratio=0.5)],
+        # SGDRegressor(),
     ]
     # Pipelines
     pipelines = []
@@ -122,9 +122,9 @@ def unscaled_pipelines():
         'verbose': 1,
     }
     models = [
-        DecisionTreeRegressor(max_depth=3, random_state=_RANDOM_STATE),
-        RandomForestRegressor(**random_forest_kwargs),
-        GradientBoostingRegressor(**gradient_boost_kwargs),
+        # DecisionTreeRegressor(max_depth=3, random_state=_RANDOM_STATE),
+        # RandomForestRegressor(**random_forest_kwargs),
+        # GradientBoostingRegressor(**gradient_boost_kwargs),
     ]
     pipelines = []
     for m in models:
@@ -136,10 +136,39 @@ def unscaled_pipelines():
 
 
 def fit_evaluate(X_train, X_test, y_train, y_test, pipeline):
-    # Fit model
-    pipeline.fit(X_train, y_train)
+    pipeline_nm = utils.pipeline_name(pipeline)
+    print(pipeline_nm)
 
+    # Fit model
+    start_time = time.perf_counter()
+    pipeline.fit(X_train, y_train)
+    end_time = time.perf_counter()
+    print('Time elapsed to fit: {:.1f}s'.format(end_time - start_time))
+
+    # Evaluate model
+    start_time = time.perf_counter()
     utils.evaluate(X_train, X_test, y_train, y_test, pipeline)
+    end_time = time.perf_counter()
+    print('Time elapsed to evaluate: {:.1f}s'.format(end_time - start_time))
+
+    X_sample_train = X_train.sample(n=10000)
+    y_sample_train = y_train.reindex(X_sample_train.index)
+
+    # Learning curve
+    start_time = time.perf_counter()
+    learn_fig = utils.plot_learning_curve([pipeline], X_sample_train, y_sample_train)
+    lc_fmt = 'output/learning_curve_{}.png'
+    learn_fig.savefig(lc_fmt.format(pipeline_nm))
+    end_time = time.perf_counter()
+    print('Time elapsed for learning curves: {:.1f}s'.format(end_time - start_time))
+
+    # Validation curve
+    start_time = time.perf_counter()
+    # val_fig = utils.plot_validation_curve([pipeline], X_sample_train, y_sample_train)
+    vc_fmt = 'output/validation_curve_{}.png'
+    # val_fig.savefig(vc_fmt.format(pipeline_nm))
+    end_time = time.perf_counter()
+    print('Time elapsed for validation curves: {:.1f}s'.format(end_time - start_time))
 
 
 def scaled_train_test_split(X_train, X_test, y_train, y_test):
@@ -165,8 +194,8 @@ def persist_pipelines(pipelines):
     fp_fmt = 'models/{}-{:%y-%m-%d %H:%M}.pkl'
     now = dt.datetime.now()
     for pipe in pipelines:
-        with open(fp_fmt.format(utils.model_name(pipe), now), 'wb') as fp:
-            print(utils.model_name(pipe))
+        with open(fp_fmt.format(utils.pipeline_name(pipe), now), 'wb') as fp:
+            print(utils.pipeline_name(pipe))
             pickle.dump(pipe, fp)
 
 if __name__ == '__main__':
@@ -178,21 +207,13 @@ if __name__ == '__main__':
     unscaled_pipes = unscaled_pipelines()
     pipes = scaled_pipes + unscaled_pipes
     for scaled_pipe in pipes:
-        print(utils.model_name(scaled_pipe))
-        start_time = time.perf_counter()
         fit_evaluate(*scaled_train_test_args, scaled_pipe)
-        end_time = time.perf_counter()
-        print('Time elapsed: {:.1f}s'.format(end_time - start_time))
 
     sample_train_test_args = sampled_train_test_split(*scaled_train_test_args,
                                                       n=10000)
     sample_pipes = sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
     for sample_pipe in sample_pipes:
-        print(utils.model_name(sample_pipe))
-        start_time = time.perf_counter()
         fit_evaluate(*sample_train_test_args, sample_pipe)
-        end_time = time.perf_counter()
-        print('Time elapsed: {:.1f}s'.format(end_time - start_time))
 
     # Persist models
     persist_pipelines(pipes)
