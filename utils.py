@@ -224,7 +224,7 @@ def _plot_curve(axes, train_sizes, train_scores, test_scores, xlabel,
         axes.set_xscale(xscale)
     axes.set_xlabel(xlabel)
     axes.set_ylabel('Accuracy')
-    axes.legend(loc='lower right')
+    axes.legend(loc='upper right')
     # Calculate ymin
     min_train = np.min(train_mean - train_std)
     min_test = np.min(test_mean - test_std)

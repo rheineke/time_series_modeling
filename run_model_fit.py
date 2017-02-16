@@ -1,5 +1,6 @@
 """Fit a variety of models to the data"""
 import datetime as dt
+import math
 import pickle
 import time
 from multiprocessing import cpu_count
@@ -43,7 +44,7 @@ def scaled_pipelines():
     ransac_kwargs = {
         'max_trials': 1000,
         'min_samples': 5000,
-        'residual_metric': lambda x: np.sum(np.abs(x), axis=1),
+        'loss': 'absolute_loss',
         'residual_threshold': 2.0,
         'random_state': _RANDOM_STATE,
     }
@@ -51,16 +52,16 @@ def scaled_pipelines():
     alphas = [.01, .1, 1, 10]
     # Model instances
     model_steps = [
-        LinearRegression(),
-        [PolynomialFeatures(degree=2), LinearRegression()],
-        # [PolynomialFeatures(degree=3), LinearRegression()],
-        # RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
+        # LinearRegression(),
+        # [PolynomialFeatures(degree=2), LinearRegression()],
+        [PolynomialFeatures(degree=3), LinearRegression()],
+        RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
         # RANSACRegressor with polynomial regression?
-        # RidgeCV(alphas=alphas),
-        # LassoCV(),  # Alphas set automatically by default
-        # ElasticNetCV(l1_ratio=0.5),  # Same as default
-        # [PolynomialFeatures(degree=2), ElasticNetCV(l1_ratio=0.5)],
-        # SGDRegressor(),
+        RidgeCV(alphas=alphas),
+        LassoCV(),  # Alphas set automatically by default
+        ElasticNetCV(l1_ratio=0.5),  # Same as default
+        [PolynomialFeatures(degree=2), ElasticNetCV(l1_ratio=0.5)],
+        SGDRegressor(),
     ]
     # Pipelines
     pipelines = []
@@ -122,9 +123,9 @@ def unscaled_pipelines():
         'verbose': 1,
     }
     models = [
-        # DecisionTreeRegressor(max_depth=3, random_state=_RANDOM_STATE),
-        # RandomForestRegressor(**random_forest_kwargs),
-        # GradientBoostingRegressor(**gradient_boost_kwargs),
+        DecisionTreeRegressor(max_depth=3, random_state=_RANDOM_STATE),
+        RandomForestRegressor(**random_forest_kwargs),
+        GradientBoostingRegressor(**gradient_boost_kwargs),
     ]
     pipelines = []
     for m in models:
@@ -151,14 +152,17 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline):
     end_time = time.perf_counter()
     print('Time elapsed to evaluate: {:.1f}s'.format(end_time - start_time))
 
-    X_sample_train = X_train.sample(n=10000)
+    exponent = int(math.log10(len(X_train)))
+    sample_n = int(math.pow(10, max(exponent - 1, 1)))
+    sample_n = max(sample_n, 10000)
+    X_sample_train = X_train.sample(n=sample_n)
     y_sample_train = y_train.reindex(X_sample_train.index)
 
     # Learning curve
     start_time = time.perf_counter()
     learn_fig = utils.plot_learning_curve([pipeline], X_sample_train, y_sample_train)
     lc_fmt = 'output/learning_curve_{}.png'
-    learn_fig.savefig(lc_fmt.format(pipeline_nm))
+    learn_fig.savefig(lc_fmt.format(pipeline_nm), dpi=200)
     end_time = time.perf_counter()
     print('Time elapsed for learning curves: {:.1f}s'.format(end_time - start_time))
 
@@ -166,7 +170,7 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline):
     start_time = time.perf_counter()
     # val_fig = utils.plot_validation_curve([pipeline], X_sample_train, y_sample_train)
     vc_fmt = 'output/validation_curve_{}.png'
-    # val_fig.savefig(vc_fmt.format(pipeline_nm))
+    # val_fig.savefig(vc_fmt.format(pipeline_nm), dpi=200)
     end_time = time.perf_counter()
     print('Time elapsed for validation curves: {:.1f}s'.format(end_time - start_time))
 
@@ -191,7 +195,7 @@ def sampled_train_test_split(X_train, X_test, y_train, y_test, n=1000):
 
 def persist_pipelines(pipelines):
     Path('models').mkdir(exist_ok=True)
-    fp_fmt = 'models/{}-{:%y-%m-%d %H:%M}.pkl'
+    fp_fmt = 'models/{}-{:%y-%m-%d}.pkl'
     now = dt.datetime.now()
     for pipe in pipelines:
         with open(fp_fmt.format(utils.pipeline_name(pipe), now), 'wb') as fp:
