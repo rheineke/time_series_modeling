@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import KernelPCA, PCA
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.externals import joblib
 from sklearn.linear_model import ElasticNetCV, LassoCV, LinearRegression, \
     RANSACRegressor, RidgeCV, SGDRegressor
 from sklearn.model_selection import train_test_split
@@ -18,6 +19,7 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
+
 
 import data
 import utils
@@ -52,7 +54,7 @@ def scaled_pipelines():
     alphas = [.01, .1, 1, 10]
     # Model instances
     model_steps = [
-        # LinearRegression(),
+        LinearRegression(),
         # [PolynomialFeatures(degree=2), LinearRegression()],
         [PolynomialFeatures(degree=3), LinearRegression()],
         RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
@@ -152,27 +154,45 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline):
     end_time = time.perf_counter()
     print('Time elapsed to evaluate: {:.1f}s'.format(end_time - start_time))
 
-    exponent = int(math.log10(len(X_train)))
-    sample_n = int(math.pow(10, max(exponent - 1, 1)))
-    sample_n = max(sample_n, 10000)
-    X_sample_train = X_train.sample(n=sample_n)
+    train_exponent = int(math.log10(len(X_train)))
+    train_sample_n = int(math.pow(10, max(train_exponent - 2, 2)))
+    train_sample_n = min(train_sample_n, 5000)
+    X_sample_train = X_train.sample(n=train_sample_n)
     y_sample_train = y_train.reindex(X_sample_train.index)
 
+    test_exponent = int(math.log10(len(X_test)))
+    test_sample_n = int(math.pow(10, max(test_exponent - 2, 2)))
+    test_sample_n = min(test_sample_n, 2000)
+    X_sample_test = X_test.sample(n=test_sample_n)
+    y_sample_test = y_test.reindex(X_sample_test.index)
+
+    # Visually inspect residuals for goodness of fitness
+    res_fig = utils.plot_residuals(X_sample_train,
+                                   X_sample_test,
+                                   y_sample_train,
+                                   y_sample_test,
+                                   pipeline)
+    res_fmt = 'output/residual_{}.png'
+    res_fig.savefig(res_fmt.format(pipeline_nm), dpi=200)
+
     # Learning curve
-    start_time = time.perf_counter()
-    learn_fig = utils.plot_learning_curve([pipeline], X_sample_train, y_sample_train)
-    lc_fmt = 'output/learning_curve_{}.png'
-    learn_fig.savefig(lc_fmt.format(pipeline_nm), dpi=200)
-    end_time = time.perf_counter()
-    print('Time elapsed for learning curves: {:.1f}s'.format(end_time - start_time))
+    # start_time = time.perf_counter()
+    # learn_fig = utils.plot_learning_curve([pipeline], X_sample_train, y_sample_train)
+    # lc_fmt = 'output/learning_curve_{}.png'
+    # learn_fig.savefig(lc_fmt.format(pipeline_nm), dpi=200)
+    # end_time = time.perf_counter()
+    # print('Time elapsed for learning curves: {:.1f}s'.format(end_time - start_time))
 
     # Validation curve
-    start_time = time.perf_counter()
-    # val_fig = utils.plot_validation_curve([pipeline], X_sample_train, y_sample_train)
-    vc_fmt = 'output/validation_curve_{}.png'
+    # start_time = time.perf_counter()
+    # val_fig = utils.plot_validation_curve([pipeline],
+    #                                       X_sample_train,
+    #                                       y_sample_train,
+    #                                       n_jobs=1)
+    # vc_fmt = 'output/validation_curve_{}.png'
     # val_fig.savefig(vc_fmt.format(pipeline_nm), dpi=200)
-    end_time = time.perf_counter()
-    print('Time elapsed for validation curves: {:.1f}s'.format(end_time - start_time))
+    # end_time = time.perf_counter()
+    # print('Time elapsed for validation curves: {:.1f}s'.format(end_time - start_time))
 
 
 def scaled_train_test_split(X_train, X_test, y_train, y_test):
@@ -198,9 +218,13 @@ def persist_pipelines(pipelines):
     fp_fmt = 'models/{}-{:%y-%m-%d}.pkl'
     now = dt.datetime.now()
     for pipe in pipelines:
-        with open(fp_fmt.format(utils.pipeline_name(pipe), now), 'wb') as fp:
-            print(utils.pipeline_name(pipe))
-            pickle.dump(pipe, fp)
+        print(utils.pipeline_name(pipe))
+        fp_name = fp_fmt.format(utils.pipeline_name(pipe), now)
+        joblib.dump(pipe, fp_name)
+        # Pickle fails to work on RandomForestRegressor
+        # with open(fp_name, 'wb') as fp:
+        #     pickle.dump(pipe, fp)
+
 
 if __name__ == '__main__':
     train_test_args = read_train_test_frames()
@@ -220,7 +244,7 @@ if __name__ == '__main__':
         fit_evaluate(*sample_train_test_args, sample_pipe)
 
     # Persist models
-    persist_pipelines(pipes)
+    # persist_pipelines(pipes)
 
     if _PCA_KWARGS['n_components'] == 1:
         X_train = scaled_train_test_args[0]

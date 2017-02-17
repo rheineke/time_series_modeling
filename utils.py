@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import ListedColormap
@@ -19,10 +21,6 @@ def model_name(pipeline):
 
 
 def evaluate(X_train, X_test, y_train, y_test, pipeline):
-    # Visually inspect residuals for goodness of fitness
-    # plot.residuals(X_train, X_test, y_train, y_test, pipeline)
-    # plt.show()
-
     y_train_pred = pipeline.predict(X_train)
     y_test_pred = pipeline.predict(X_test)
 
@@ -35,6 +33,36 @@ def evaluate(X_train, X_test, y_train, y_test, pipeline):
     r2_train = r2_score(y_train, y_train_pred)
     r2_test = r2_score(y_test, y_test_pred)
     print('R^2 train {:.3}, validation {:.3}'.format(r2_train, r2_test))
+
+
+def plot_residuals(X_train_df, X_test_df, y_train_df, y_test_df, model):
+    """Plot residuals of a random subset of train and test sets"""
+    fig, axes = plt.subplots(nrows=1, ncols=1)
+
+    # Random sample of training set
+    # X_train_sample = X_train_df.sample(n=nsamples)
+    # y_train_sample = y_train_df.reindex(X_train_sample.index)
+    # Scatter plot of training residuals
+    y_train_pred = model.predict(X_train_df)
+    train_kwargs = dict(c='blue', marker='o', label='Training data')
+    axes.scatter(y_train_pred, y_train_pred - y_train_df, **train_kwargs)
+    # Random sample of test set
+    # X_test_sample = X_test_df.sample(n=nsamples)
+    # y_test_sample = y_test_df.reindex(X_test_sample.index)
+    # Scatter plot of test residuals
+    y_test_pred = model.predict(X_test_df)
+    test_kwargs = dict(c='lightgreen', marker='o', label='Test data')
+    axes.scatter(y_test_pred, y_test_pred - y_test_df, **test_kwargs)
+    axes.set_xlabel('Predicted values')
+    axes.set_ylabel('Residuals')
+    axes.legend(loc='upper left')
+    # Find range
+    xmin = math.floor(min(y_train_pred.min(), y_test_pred.min()))
+    xmax = math.ceil(max(y_train_pred.max(), y_test_pred.max()))
+    axes.hlines(y=0, xmin=xmin, xmax=xmax, lw=2, color='red')
+    axes.set_xlim([xmin, xmax])
+
+    return fig
 
 
 def plot_classication_data(X, y, test_idx=None):
@@ -156,7 +184,7 @@ def plot_learning_curve(estimators, X, y, cv=10, n_jobs=1):
     return fig
 
 
-def plot_validation_curve(estimators, X, y, cv=10, n_jobs=1):
+def plot_validation_curve(estimators, X, y, cv=10, **kwargs):
     figsize = (6.4 * len(estimators), 4.8)
     fig, axes = plt.subplots(nrows=1, ncols=len(estimators), figsize=figsize)
     param_range = [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
@@ -165,16 +193,15 @@ def plot_validation_curve(estimators, X, y, cv=10, n_jobs=1):
         axes = [axes]
 
     for ax, estimator in zip(axes, estimators):
-        kwargs = dict(
+        vc_kwargs = dict(
             estimator=estimator,
             X=X,
             y=y,
             param_name='clf__C',
             param_range=param_range,
             cv=cv,
-            n_jobs=n_jobs
         )
-        train_scores, test_scores = validation_curve(**kwargs)
+        train_scores, test_scores = validation_curve(**vc_kwargs, **kwargs)
         xlabel = 'Parameter C'
         _plot_curve(ax, param_range, train_scores, test_scores, xlabel, 'log')
         ax.set_title(pipeline_name(estimator))
