@@ -31,12 +31,12 @@ _RANDOM_STATE = None
 def read_train_test_frames():
     df = data.read_csv()
     # Dependent and independent features
-    y = df[data.DEPENDENT]
-    X = df[data.INDEPENDENTS]
+    y_df = df[data.DEPENDENT]
+    x_df = df[data.INDEPENDENTS]
     # Split into training and testing sets
     test_size = .20  # 10e6 observations on rank 3 justifies reduced test size
     split_kwargs = dict(test_size=test_size, random_state=_RANDOM_STATE)
-    return train_test_split(X, y, **split_kwargs)
+    return train_test_split(x_df, y_df, **split_kwargs)
 
 
 def scaled_pipelines():
@@ -54,16 +54,16 @@ def scaled_pipelines():
     alphas = [.01, .1, 1, 10]
     # Model instances
     model_steps = [
-        LinearRegression(),
+        # LinearRegression(),
         # [PolynomialFeatures(degree=2), LinearRegression()],
-        [PolynomialFeatures(degree=3), LinearRegression()],
-        RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
+        # [PolynomialFeatures(degree=3), LinearRegression()],
+        # RANSACRegressor(base_estimator=LinearRegression(), **ransac_kwargs),
         # RANSACRegressor with polynomial regression?
-        RidgeCV(alphas=alphas),
-        LassoCV(),  # Alphas set automatically by default
-        ElasticNetCV(l1_ratio=0.5),  # Same as default
-        [PolynomialFeatures(degree=2), ElasticNetCV(l1_ratio=0.5)],
-        SGDRegressor(),
+        # RidgeCV(alphas=alphas),
+        # LassoCV(),  # Alphas set automatically by default
+        # ElasticNetCV(l1_ratio=0.5),  # Same as default
+        # [PolynomialFeatures(degree=2), ElasticNetCV(l1_ratio=0.5)],
+        # SGDRegressor(),
     ]
     # Pipelines
     pipelines = []
@@ -126,8 +126,8 @@ def unscaled_pipelines():
     }
     models = [
         DecisionTreeRegressor(max_depth=3, random_state=_RANDOM_STATE),
-        RandomForestRegressor(**random_forest_kwargs),
-        GradientBoostingRegressor(**gradient_boost_kwargs),
+        # RandomForestRegressor(**random_forest_kwargs),
+        # GradientBoostingRegressor(**gradient_boost_kwargs),
     ]
     pipelines = []
     for m in models:
@@ -135,6 +135,9 @@ def unscaled_pipelines():
         common_steps = [StandardScaler(), PCA(**_PCA_KWARGS)]
         steps = common_steps + [m]
         pipelines.append(make_pipeline(*steps))
+    # Completely unscaled pipelines
+    for m in models:
+        pipelines.append(make_pipeline(m))
     return pipelines
 
 
@@ -234,17 +237,21 @@ if __name__ == '__main__':
     scaled_pipes = scaled_pipelines()
     unscaled_pipes = unscaled_pipelines()
     pipes = scaled_pipes + unscaled_pipes
+
+    # Print a summary so we have an idea of how many models are being run
+    print('Number of models fit to entire data set: {}'.format(len(pipes)))
+
     for scaled_pipe in pipes:
         fit_evaluate(*scaled_train_test_args, scaled_pipe)
 
     sample_train_test_args = sampled_train_test_split(*scaled_train_test_args,
                                                       n=10000)
-    sample_pipes = sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
+    sample_pipes = sample_pipelines(pca_kernels=[], svr_kernels=[])
     for sample_pipe in sample_pipes:
         fit_evaluate(*sample_train_test_args, sample_pipe)
 
     # Persist models
-    # persist_pipelines(pipes)
+    persist_pipelines(pipes)
 
     if _PCA_KWARGS['n_components'] == 1:
         X_train = scaled_train_test_args[0]
