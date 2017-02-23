@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # 99% of the variance can be explained by first PCA component, but the
     # relationship with 9 is still noisy. Try a polynomial regression
     pca = PCA(n_components=3)
-    X = df[data.INDEPENDENTS]
+    X = df[data.independents(df)]
     y = df[data.DEPENDENT]
     pca.fit(X)
     pca_var_msg_fmt = 'PCA explained variance ratio: {}'
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         'linear',
         'poly',
         'rbf',
-        'sigmoid',
+        # 'sigmoid',
         'cosine',
     ]
     # Kernel PCAs are compute and memory intensive so fit on a random sample
