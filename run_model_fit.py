@@ -137,7 +137,7 @@ def unscaled_pipelines():
     return pipelines
 
 
-def fit_evaluate(X_train, X_test, y_train, y_test, pipeline):
+def fit_evaluate(X_train, X_test, y_train, y_test, pipeline, n_min=10000):
     pipeline_nm = utils.pipeline_name(pipeline)
     print(pipeline_nm)
 
@@ -155,28 +155,28 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline):
 
     train_exponent = int(math.log10(len(X_train)))
     train_sample_n = int(math.pow(10, max(train_exponent - 2, 2)))
-    train_sample_n = min(train_sample_n, 5000)
+    train_sample_n = max(train_sample_n, min(n_min, len(X_train)))
     X_sample_train = X_train.sample(n=train_sample_n)
     y_sample_train = y_train.reindex(X_sample_train.index)
 
     test_exponent = int(math.log10(len(X_test)))
     test_sample_n = int(math.pow(10, max(test_exponent - 2, 2)))
-    test_sample_n = min(test_sample_n, 2000)
+    test_sample_n = max(test_sample_n, min(n_min, len(X_test)))
     X_sample_test = X_test.sample(n=test_sample_n)
     y_sample_test = y_test.reindex(X_sample_test.index)
 
     # Visually inspect residuals for goodness of fitness
-    # res_fig = utils.plot_residuals(X_sample_train,
-    #                                X_sample_test,
-    #                                y_sample_train,
-    #                                y_sample_test,
-    #                                pipeline)
-    # res_fmt = 'output/residual_{}.png'
-    # res_fig.savefig(res_fmt.format(pipeline_nm), dpi=200)
+    res_fig = utils.plot_residuals(X_sample_train,
+                                   X_sample_test,
+                                   y_sample_train,
+                                   y_sample_test,
+                                   pipeline)
+    res_fmt = 'output/residual_{}.png'
+    res_fig.savefig(res_fmt.format(pipeline_nm), dpi=200)
 
     # Learning curve
     start_time = time.perf_counter()
-    learn_fig = utils.plot_learning_curve([pipeline], X_sample_train, y_sample_train)
+    learn_fig = utils.plot_learning_curve([pipeline], X_train, y_train)
     lc_fmt = 'output/learning_curve_{}.png'
     learn_fig.savefig(lc_fmt.format(pipeline_nm), dpi=200)
     end_time = time.perf_counter()
@@ -185,8 +185,8 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline):
     # Validation curve
     # start_time = time.perf_counter()
     # val_fig = utils.plot_validation_curve([pipeline],
-    #                                       X_sample_train,
-    #                                       y_sample_train,
+    #                                       X_train,
+    #                                       y_train,
     #                                       n_jobs=1)
     # vc_fmt = 'output/validation_curve_{}.png'
     # val_fig.savefig(vc_fmt.format(pipeline_nm), dpi=200)
@@ -240,14 +240,15 @@ if __name__ == '__main__':
     for scaled_pipe in pipes:
         fit_evaluate(*scaled_train_test_args, scaled_pipe)
 
+    n_sample = 10000
     sample_train_test_args = sampled_train_test_split(*scaled_train_test_args,
-                                                      n=10000)
+                                                      n=n_sample)
     sample_pipes = sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
     for sample_pipe in sample_pipes:
-        fit_evaluate(*sample_train_test_args, sample_pipe)
+        fit_evaluate(*sample_train_test_args, sample_pipe, n_min=n_sample)
 
     # Persist models
-    persist_pipelines(pipes)
+    # persist_pipelines(pipes)
 
     if _PCA_KWARGS['n_components'] == 1:
         X_train = scaled_train_test_args[0]
