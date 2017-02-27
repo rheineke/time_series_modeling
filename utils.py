@@ -174,7 +174,9 @@ def plot_learning_curve(estimators, X, y, cv=10, n_jobs=1):
             y=y,
             train_sizes=np.linspace(0.1, 1.0, 10),
             cv=cv,
-            n_jobs=n_jobs
+            # scoring='accuracy',
+            n_jobs=n_jobs,
+            verbose=1
         )
         train_sizes, train_scores, test_scores = learning_curve(**kwargs)
         xlabel = 'Number of training samples'

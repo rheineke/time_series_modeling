@@ -127,7 +127,7 @@ def unscaled_pipelines():
     }
     models = [
         DecisionTreeRegressor(max_depth=3, random_state=_RANDOM_STATE),
-        RandomForestRegressor(**random_forest_kwargs),
+        # RandomForestRegressor(**random_forest_kwargs),
         # GradientBoostingRegressor(**gradient_boost_kwargs),
     ]
     pipelines = []
@@ -153,9 +153,10 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline, n_min=10000):
     end_time = time.perf_counter()
     print('Time elapsed to evaluate: {:.1f}s'.format(end_time - start_time))
 
-    train_exponent = int(math.log10(len(X_train)))
-    train_sample_n = int(math.pow(10, max(train_exponent - 2, 2)))
-    train_sample_n = max(train_sample_n, min(n_min, len(X_train)))
+    # train_exponent = int(math.log10(len(X_train)))
+    # train_sample_n = int(math.pow(10, max(train_exponent - 2, 2)))
+    # train_sample_n = max(train_sample_n, min(n_min, len(X_train)))
+    train_sample_n = 10000
     X_sample_train = X_train.sample(n=train_sample_n)
     y_sample_train = y_train.reindex(X_sample_train.index)
 
@@ -176,7 +177,7 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline, n_min=10000):
 
     # Learning curve
     start_time = time.perf_counter()
-    learn_fig = utils.plot_learning_curve([pipeline], X_train, y_train)
+    learn_fig = utils.plot_learning_curve([pipeline], X_sample_train, y_sample_train)
     lc_fmt = 'output/learning_curve_{}.png'
     learn_fig.savefig(lc_fmt.format(pipeline_nm), dpi=200)
     end_time = time.perf_counter()
@@ -244,25 +245,12 @@ if __name__ == '__main__':
     sample_train_test_args = sampled_train_test_split(*scaled_train_test_args,
                                                       n=n_sample)
     sample_pipes = sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
+
+    # Print a summary so we have an idea of how many models are being run
+    print('Number of models fit to sampled data set: {}'.format(len(pipes)))
+
     for sample_pipe in sample_pipes:
         fit_evaluate(*sample_train_test_args, sample_pipe, n_min=n_sample)
 
     # Persist models
-    # persist_pipelines(pipes)
-
-    if _PCA_KWARGS['n_components'] == 1:
-        X_train = scaled_train_test_args[0]
-        y_train_df = scaled_train_test_args[2]
-        # Display multiple scaled models against single PCA component by slicing
-        # pipelines
-        scaled_models = []
-        nsteps_common = 2
-        for pipe in pipes:
-            nsteps = len(pipe.steps) - nsteps_common
-            scaled_models.append(Pipeline(pipe.steps[-nsteps:]))
-        # Transform X now by common steps
-        scale_transform_pipe = Pipeline(pipes[0].steps[:nsteps_common])
-        X_train_scale = scale_transform_pipe.transform(X_train)
-        X_train_scale_df = pd.DataFrame(data=X_train_scale, index=X_train.index)
-        utils.single_feature(X_train_scale_df, y_train_df, scaled_models)
-        plt.show()
+    # persist_pipelines(pipes + sample_pipes)
