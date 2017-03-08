@@ -7,9 +7,6 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import learning_curve, validation_curve
 
 
-# def classifier_name(classifier):
-#     return str(type(classifier).__name__).lower()
-
 def pipeline_name(pipeline):
     names = [nm for nm, _ in pipeline.steps]
     return 'Pipe_' + '_'.join(names)
@@ -17,7 +14,6 @@ def pipeline_name(pipeline):
 
 def model_name(pipeline):
     return pipeline.steps[-1][0]
-    # return classifier_name(pipeline.named_steps['clf'])
 
 
 def evaluate(X_train, X_test, y_train, y_test, pipeline):
@@ -167,22 +163,22 @@ def plot_learning_curve(estimators, X, y, cv=10, n_jobs=1):
     if len(estimators) == 1:
         axes = [axes]
 
+    scoring = 'r2'
     for ax, estimator in zip(axes, estimators):
         kwargs = dict(
             estimator=estimator,
             X=X,
             y=y,
-            train_sizes=np.linspace(0.1, 1.0, 10),
+            train_sizes=np.linspace(start=0.1, stop=1.0, num=10),
             cv=cv,
-            # scoring='accuracy',
+            scoring=scoring,
             n_jobs=n_jobs,
             verbose=1
         )
         train_sizes, train_scores, test_scores = learning_curve(**kwargs)
         xlabel = 'Number of training samples'
-        _plot_curve(ax, train_sizes, train_scores, test_scores, xlabel)
+        _plot_curve(ax, train_sizes, train_scores, test_scores, xlabel, scoring)
         ax.set_title(pipeline_name(estimator))
-        # ax.set_title(classifier_name(estimator.named_steps['clf']))
     return fig
 
 
@@ -215,13 +211,16 @@ def plot_validation_curve(estimators, X, y, cv=10, **kwargs):
 
 
 def _plot_curve(axes, train_sizes, train_scores, test_scores, xlabel,
-                xscale=None):
+                xscale=None, scoring=None):
+    if scoring is None:
+        scoring = 'score'
+
     train_mean = np.mean(train_scores, axis=1)
     train_std = np.std(train_scores, axis=1)
     test_mean = np.mean(test_scores, axis=1)
     test_std = np.std(test_scores, axis=1)
 
-    lbl = 'training accuracy'
+    lbl = 'training {}'.format(scoring)
     train_kwds = dict(color='blue', marker='o', markersize=5, label=lbl)
     axes.plot(train_sizes, train_mean, **train_kwds)
     axes.fill_between(
@@ -232,7 +231,7 @@ def _plot_curve(axes, train_sizes, train_scores, test_scores, xlabel,
         color='blue'
     )
 
-    lbl = 'validation accuracy'
+    lbl = 'validation {}'.format(scoring)
     tst_kwds = dict(
         color='green',
         linestyle='--',
@@ -252,7 +251,7 @@ def _plot_curve(axes, train_sizes, train_scores, test_scores, xlabel,
     if xscale is not None:
         axes.set_xscale(xscale)
     axes.set_xlabel(xlabel)
-    axes.set_ylabel('Accuracy')
+    axes.set_ylabel(scoring.capitalize())
     axes.legend(loc='upper right')
     # Calculate ymin
     min_train = np.min(train_mean - train_std)
