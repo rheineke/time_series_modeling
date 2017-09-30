@@ -156,14 +156,13 @@ def _plot_decision_regions(axes, X, y, classifier, test_idx=None,
         axes.scatter(X_test[:, 0], X_test[:, 1], **test_kwds)
 
 
-def plot_learning_curve(estimators, X, y, cv=10, n_jobs=1):
+def plot_learning_curve(estimators, X, y, cv=10, scoring=None, n_jobs=1):
     figsize = (6.4 * len(estimators), 4.8)
     fig, axes = plt.subplots(nrows=1, ncols=len(estimators), figsize=figsize)
 
     if len(estimators) == 1:
         axes = [axes]
 
-    scoring = 'r2'
     for ax, estimator in zip(axes, estimators):
         kwargs = dict(
             estimator=estimator,
@@ -171,13 +170,20 @@ def plot_learning_curve(estimators, X, y, cv=10, n_jobs=1):
             y=y,
             train_sizes=np.linspace(start=0.1, stop=1.0, num=10),
             cv=cv,
-            scoring=scoring,
+            scoring=None,
             n_jobs=n_jobs,
             verbose=1
         )
         train_sizes, train_scores, test_scores = learning_curve(**kwargs)
         xlabel = 'Number of training samples'
-        _plot_curve(ax, train_sizes, train_scores, test_scores, xlabel, scoring)
+        _plot_curve(
+            axes=ax,
+            train_sizes=train_sizes,
+            train_scores=train_scores,
+            test_scores=test_scores,
+            xlabel=xlabel,
+            scoring=scoring
+        )
         ax.set_title(pipeline_name(estimator))
     return fig
 

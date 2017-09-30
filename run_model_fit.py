@@ -30,9 +30,11 @@ _RANDOM_STATE = None
 
 def read_train_test_frames():
     df = data.read_csv(index_col=8)
+
     # Dependent and independent features
-    y_df = df[data.DEPENDENT]
+    y_df = df[[data.DEPENDENT]]
     x_df = df[data.independents(df)]
+
     # Split into training and testing sets
     test_size = .20  # 10e6 observations on rank 3 justifies reduced test size
     split_kwargs = dict(test_size=test_size, random_state=_RANDOM_STATE)
@@ -200,10 +202,10 @@ def scaled_train_test_split(X_train, X_test, y_train, y_test):
     sc_y = StandardScaler()
     y_train_std = sc_y.fit_transform(y_train)
     # For consistency, create a dataframe version of the np array
-    y_train_std_df = pd.Series(data=y_train_std, index=y_train.index)
+    y_train_std_df = pd.DataFrame(data=y_train_std, index=y_train.index)
     y_test_std = sc_y.transform(y_test)
     # For consistency, create a dataframe version of the np array
-    y_test_std_df = pd.Series(data=y_test_std, index=y_test.index)
+    y_test_std_df = pd.DataFrame(data=y_test_std, index=y_test.index)
     return [X_train, X_test, y_train_std_df, y_test_std_df]
 
 
@@ -232,8 +234,8 @@ if __name__ == '__main__':
 
     # Generate a list of pipelines, one for each model to be fit on scaled data
     scaled_pipes = scaled_pipelines()
-    unscaled_pipes = unscaled_pipelines()
-    pipes = []  # scaled_pipes + unscaled_pipes
+    unscaled_pipes = []  # unscaled_pipelines()
+    pipes = scaled_pipes + unscaled_pipes
 
     # Print a summary so we have an idea of how many models are being run
     print('Number of models fit to entire data set: {}'.format(len(pipes)))
@@ -244,7 +246,7 @@ if __name__ == '__main__':
     n_sample = 10000
     sample_train_test_args = sampled_train_test_split(*scaled_train_test_args,
                                                       n=n_sample)
-    sample_pipes = sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
+    sample_pipes = []  # sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
 
     # Print a summary so we have an idea of how many models are being run
     print('Number of models fit to sampled data set: {}'.format(len(pipes)))
