@@ -164,7 +164,7 @@ def plot_learning_curve(estimators, X, y, cv=10, scoring=None, n_jobs=1):
         axes = [axes]
 
     for ax, estimator in zip(axes, estimators):
-        kwargs = dict(
+        train_sizes, train_scores, test_scores = learning_curve(
             estimator=estimator,
             X=X,
             y=y,
@@ -174,7 +174,6 @@ def plot_learning_curve(estimators, X, y, cv=10, scoring=None, n_jobs=1):
             n_jobs=n_jobs,
             verbose=1
         )
-        train_sizes, train_scores, test_scores = learning_curve(**kwargs)
         xlabel = 'Number of training samples'
         _plot_curve(
             axes=ax,
@@ -197,19 +196,17 @@ def plot_validation_curve(estimators, X, y, cv=10, **kwargs):
         axes = [axes]
 
     for ax, estimator in zip(axes, estimators):
-        vc_kwargs = dict(
+        train_scores, test_scores = validation_curve(
             estimator=estimator,
             X=X,
             y=y,
             param_name='clf__C',
             param_range=param_range,
             cv=cv,
-        )
-        train_scores, test_scores = validation_curve(**vc_kwargs, **kwargs)
+            **kwargs)
         xlabel = 'Parameter C'
         _plot_curve(ax, param_range, train_scores, test_scores, xlabel, 'log')
         ax.set_title(pipeline_name(estimator))
-        # ax.set_title(classifier_name(estimator.named_steps['clf']))
 
     # fig.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
 
