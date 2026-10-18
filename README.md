@@ -23,3 +23,20 @@ The project has 3 modules that can be run:
 
 [Anaconda]: https://www.continuum.io/downloads
 [data set]: https://drive.google.com/open?id=0BwpUS-D5xBA9WnlMYU5sSkRHUmM
+
+## Setup
+```zsh
+conda env create -f environment.yaml
+conda activate time-series-modeling
+pre-commit install
+```
+
+and
+```shell
+pip install -e ".[dev,test]"
+```
+
+## Tests
+```shell
+pytest
+```

@@ -1,8 +1,8 @@
 import datetime as dt
 
 import pydotplus
+import joblib
 from sklearn import tree
-from sklearn.externals import joblib
 
 if __name__ == '__main__':
     clf_name = 'decisiontreeregressor'

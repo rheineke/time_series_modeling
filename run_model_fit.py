@@ -9,9 +9,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import joblib
 from sklearn.decomposition import KernelPCA, PCA
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-from sklearn.externals import joblib
 from sklearn.linear_model import ElasticNetCV, LassoCV, LinearRegression, \
     RANSACRegressor, RidgeCV, SGDRegressor
 from sklearn.model_selection import train_test_split

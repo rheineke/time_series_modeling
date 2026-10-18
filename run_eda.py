@@ -4,7 +4,7 @@ import time
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from pandas.tools.plotting import andrews_curves, autocorrelation_plot, \
+from pandas.plotting import andrews_curves, autocorrelation_plot, \
     lag_plot, parallel_coordinates, scatter_matrix
 from sklearn.decomposition import PCA, KernelPCA
 

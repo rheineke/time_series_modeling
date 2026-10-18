@@ -98,3 +98,10 @@ output/
 
 OS specific files
 .DS_Store
+
+# Build, tool and environment caches
+.venv/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
