@@ -3,8 +3,8 @@
 This project uses a large data set to demonstrate a variety of data science and
 machine learning techniques
 
-The [data set] for this machine learning tour is hosted on Google Drive. The 
-file is a compressed text file containing comma-separated data in 10 columns. 
+The [data set] for this machine learning tour is hosted on Google Drive. The
+file is a compressed text file containing comma-separated data in 10 columns.
 The goal is to build a model to predict the 10th column using the first 9
 columns.
 

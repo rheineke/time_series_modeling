@@ -1,25 +1,22 @@
 """Fit a variety of models to the data"""
+
 import datetime as dt
 import math
-import pickle
 import time
 from multiprocessing import cpu_count
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 import joblib
-from sklearn.decomposition import KernelPCA, PCA
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-from sklearn.linear_model import ElasticNetCV, LassoCV, LinearRegression, \
-    RANSACRegressor, RidgeCV, SGDRegressor
+import pandas as pd
+from sklearn.decomposition import PCA, KernelPCA
+from sklearn.linear_model import (
+    LinearRegression,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
 from sklearn.tree import DecisionTreeRegressor
-
 
 import data
 import utils
@@ -36,7 +33,7 @@ def read_train_test_frames():
     x_df = df[data.independents(df)]
 
     # Split into training and testing sets
-    test_size = .20  # 10e6 observations on rank 3 justifies reduced test size
+    test_size = 0.20  # 10e6 observations on rank 3 justifies reduced test size
     split_kwargs = dict(test_size=test_size, random_state=_RANDOM_STATE)
     return train_test_split(x_df, y_df, **split_kwargs)
 
@@ -46,14 +43,14 @@ def scaled_pipelines():
     # RANSAC parameters
     # 500 max trials takes 90s
     ransac_kwargs = {
-        'max_trials': 1000,
-        'min_samples': 5000,
-        'loss': 'absolute_loss',
-        'residual_threshold': 2.0,
-        'random_state': _RANDOM_STATE,
+        "max_trials": 1000,
+        "min_samples": 5000,
+        "loss": "absolute_loss",
+        "residual_threshold": 2.0,
+        "random_state": _RANDOM_STATE,
     }
     # Ridge CV parameters
-    alphas = [.01, .1, 1, 10]
+    alphas = [0.01, 0.1, 1, 10]
     # Model instances
     model_steps = [
         LinearRegression(),
@@ -71,10 +68,7 @@ def scaled_pipelines():
     pipelines = []
     for m in model_steps:
         # Steps
-        common_steps = [
-            StandardScaler(),
-            PCA(**_PCA_KWARGS)
-        ]
+        common_steps = [StandardScaler(), PCA(**_PCA_KWARGS)]
         model_steps = m if isinstance(m, list) else [m]
         steps = common_steps + model_steps
         pipelines.append(make_pipeline(*steps))
@@ -89,14 +83,16 @@ def sample_pipelines(pca_kernels=None, svr_kernels=None):
     # Model instances
     model_steps = []
     if pca_kernels is None:
-        pca_kernels = ['poly', 'rbf', 'sigmoid', 'cosine']
+        pca_kernels = ["poly", "rbf", "sigmoid", "cosine"]
     for pca_kernel in pca_kernels:
-        model_steps.append([
-            KernelPCA(n_components=2, kernel=pca_kernel),
-            LinearRegression(),
-        ])
+        model_steps.append(
+            [
+                KernelPCA(n_components=2, kernel=pca_kernel),
+                LinearRegression(),
+            ]
+        )
     if svr_kernels is None:
-        svr_kernels = ['poly', 'rbf', 'sigmoid']
+        svr_kernels = ["poly", "rbf", "sigmoid"]
     for svr_kernel in svr_kernels:
         model_steps.append(SVR(kernel=svr_kernel, verbose=True, cache_size=1000))
 
@@ -116,16 +112,16 @@ def sample_pipelines(pca_kernels=None, svr_kernels=None):
 def unscaled_pipelines():
     # Random forest parameters
     random_forest_kwargs = {
-        'n_estimators': 10,
-        'criterion': 'mse',
-        'random_state': _RANDOM_STATE,
-        'n_jobs': cpu_count(),
-        'verbose': True,
+        "n_estimators": 10,
+        "criterion": "mse",
+        "random_state": _RANDOM_STATE,
+        "n_jobs": cpu_count(),
+        "verbose": True,
     }
     # Gradient boosting parameters
     gradient_boost_kwargs = {
-        'random_state': _RANDOM_STATE,
-        'verbose': 1,
+        "random_state": _RANDOM_STATE,
+        "verbose": 1,
     }
     models = [
         DecisionTreeRegressor(max_depth=3, random_state=_RANDOM_STATE),
@@ -147,13 +143,13 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline, n_min=10000):
     start_time = time.perf_counter()
     pipeline.fit(X_train, y_train)
     end_time = time.perf_counter()
-    print('Time elapsed to fit: {:.1f}s'.format(end_time - start_time))
+    print(f"Time elapsed to fit: {end_time - start_time:.1f}s")
 
     # Evaluate model
     start_time = time.perf_counter()
     utils.evaluate(X_train, X_test, y_train, y_test, pipeline)
     end_time = time.perf_counter()
-    print('Time elapsed to evaluate: {:.1f}s'.format(end_time - start_time))
+    print(f"Time elapsed to evaluate: {end_time - start_time:.1f}s")
 
     # train_exponent = int(math.log10(len(X_train)))
     # train_sample_n = int(math.pow(10, max(train_exponent - 2, 2)))
@@ -169,21 +165,19 @@ def fit_evaluate(X_train, X_test, y_train, y_test, pipeline, n_min=10000):
     y_sample_test = y_test.reindex(X_sample_test.index)
 
     # Visually inspect residuals for goodness of fitness
-    res_fig = utils.plot_residuals(X_sample_train,
-                                   X_sample_test,
-                                   y_sample_train,
-                                   y_sample_test,
-                                   pipeline)
-    res_fmt = 'output/residual_{}.png'
+    res_fig = utils.plot_residuals(
+        X_sample_train, X_sample_test, y_sample_train, y_sample_test, pipeline
+    )
+    res_fmt = "output/residual_{}.png"
     res_fig.savefig(res_fmt.format(pipeline_nm), dpi=200)
 
     # Learning curve
     start_time = time.perf_counter()
     learn_fig = utils.plot_learning_curve([pipeline], X_sample_train, y_sample_train)
-    lc_fmt = 'output/learning_curve_{}.png'
+    lc_fmt = "output/learning_curve_{}.png"
     learn_fig.savefig(lc_fmt.format(pipeline_nm), dpi=200)
     end_time = time.perf_counter()
-    print('Time elapsed for learning curves: {:.1f}s'.format(end_time - start_time))
+    print(f"Time elapsed for learning curves: {end_time - start_time:.1f}s")
 
     # Validation curve
     # start_time = time.perf_counter()
@@ -216,8 +210,8 @@ def sampled_train_test_split(X_train, X_test, y_train, y_test, n=1000):
 
 
 def persist_pipelines(pipelines):
-    Path('models').mkdir(exist_ok=True)
-    fp_fmt = 'models/{}-{:%y-%m-%d}.pkl'
+    Path("models").mkdir(exist_ok=True)
+    fp_fmt = "models/{}-{:%y-%m-%d}.pkl"
     now = dt.datetime.now()
     for pipe in pipelines:
         print(utils.pipeline_name(pipe))
@@ -228,31 +222,37 @@ def persist_pipelines(pipelines):
         #     pickle.dump(pipe, fp)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     train_test_args = read_train_test_frames()
     scaled_train_test_args = scaled_train_test_split(*train_test_args)
 
     # Generate a list of pipelines, one for each model to be fit on scaled data
     scaled_pipes = scaled_pipelines()
-    unscaled_pipes = []  # unscaled_pipelines()
+    unscaled_pipes: list[Pipeline] = []  # unscaled_pipelines()
     pipes = scaled_pipes + unscaled_pipes
 
     # Print a summary so we have an idea of how many models are being run
-    print('Number of models fit to entire data set: {}'.format(len(pipes)))
+    print(f"Number of models fit to entire data set: {len(pipes)}")
 
+    X_train, X_test, y_train, y_test = scaled_train_test_args
     for scaled_pipe in pipes:
-        fit_evaluate(*scaled_train_test_args, scaled_pipe)
+        fit_evaluate(X_train, X_test, y_train, y_test, scaled_pipe)
 
     n_sample = 10000
-    sample_train_test_args = sampled_train_test_split(*scaled_train_test_args,
-                                                      n=n_sample)
-    sample_pipes = []  # sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
+    X_train_s, X_test_s, y_train_s, y_test_s = sampled_train_test_split(
+        X_train, X_test, y_train, y_test, n=n_sample
+    )
+    sample_pipes: list[
+        Pipeline
+    ] = []  # sample_pipelines(pca_kernels=[], svr_kernels=['rbf'])
 
     # Print a summary so we have an idea of how many models are being run
-    print('Number of models fit to sampled data set: {}'.format(len(pipes)))
+    print(f"Number of models fit to sampled data set: {len(pipes)}")
 
     for sample_pipe in sample_pipes:
-        fit_evaluate(*sample_train_test_args, sample_pipe, n_min=n_sample)
+        fit_evaluate(
+            X_train_s, X_test_s, y_train_s, y_test_s, sample_pipe, n_min=n_sample
+        )
 
     # Persist models
     # persist_pipelines(pipes + sample_pipes)

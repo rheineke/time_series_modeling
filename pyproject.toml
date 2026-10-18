@@ -27,9 +27,13 @@ only-include = ["data.py", "ipsh.py", "run_eda.py", "run_graphs.py", "run_model_
 
 [tool.ruff]
 line-length = 88
+extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+# Legacy exploratory code: unused locals and loop variables, %-formatting,
+# lambdas and zip() without strict are left as written
+ignore = ["B905", "F841"]
 
 [tool.mypy]
 ignore_missing_imports = true

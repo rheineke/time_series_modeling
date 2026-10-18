@@ -9,7 +9,7 @@ from sklearn.model_selection import learning_curve, validation_curve
 
 def pipeline_name(pipeline):
     names = [nm for nm, _ in pipeline.steps]
-    return 'Pipe_' + '_'.join(names)
+    return "Pipe_" + "_".join(names)
 
 
 def model_name(pipeline):
@@ -23,12 +23,12 @@ def evaluate(X_train, X_test, y_train, y_test, pipeline):
     # Mean squared error for the hell of it
     mse_train = mean_squared_error(y_train, y_train_pred)
     mse_test = mean_squared_error(y_test, y_test_pred)
-    print('MSE train {:.3}, validation {:.3}'.format(mse_train, mse_test))
+    print(f"MSE train {mse_train:.3}, validation {mse_test:.3}")
 
     # Coefficient of determination
     r2_train = r2_score(y_train, y_train_pred)
     r2_test = r2_score(y_test, y_test_pred)
-    print('R^2 train {:.3}, validation {:.3}'.format(r2_train, r2_test))
+    print(f"R^2 train {r2_train:.3}, validation {r2_test:.3}")
 
 
 def plot_residuals(X_train_df, X_test_df, y_train_df, y_test_df, model):
@@ -40,22 +40,22 @@ def plot_residuals(X_train_df, X_test_df, y_train_df, y_test_df, model):
     # y_train_sample = y_train_df.reindex(X_train_sample.index)
     # Scatter plot of training residuals
     y_train_pred = model.predict(X_train_df)
-    train_kwargs = dict(c='blue', marker='o', label='Training data')
+    train_kwargs = dict(c="blue", marker="o", label="Training data")
     axes.scatter(y_train_pred, y_train_pred - y_train_df, **train_kwargs)
     # Random sample of test set
     # X_test_sample = X_test_df.sample(n=nsamples)
     # y_test_sample = y_test_df.reindex(X_test_sample.index)
     # Scatter plot of test residuals
     y_test_pred = model.predict(X_test_df)
-    test_kwargs = dict(c='lightgreen', marker='o', label='Test data')
+    test_kwargs = dict(c="lightgreen", marker="o", label="Test data")
     axes.scatter(y_test_pred, y_test_pred - y_test_df, **test_kwargs)
-    axes.set_xlabel('Predicted values')
-    axes.set_ylabel('Residuals')
-    axes.legend(loc='upper left')
+    axes.set_xlabel("Predicted values")
+    axes.set_ylabel("Residuals")
+    axes.legend(loc="upper left")
     # Find range
     xmin = math.floor(min(y_train_pred.min(), y_test_pred.min()))
     xmax = math.ceil(max(y_train_pred.max(), y_test_pred.max()))
-    axes.hlines(y=0, xmin=xmin, xmax=xmax, lw=2, color='red')
+    axes.hlines(y=0, xmin=xmin, xmax=xmax, lw=2, color="red")
     axes.set_xlim([xmin, xmax])
 
     return fig
@@ -65,9 +65,9 @@ def plot_classication_data(X, y, test_idx=None):
     fig, axes = plt.subplots(nrows=1, ncols=1)
 
     # setup marker generator and color map
-    markers = ('s', 'x', 'o', '^', 'v')
-    colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
-    cmap = ListedColormap(colors[:len(np.unique(y))])
+    markers = ("s", "x", "o", "^", "v")
+    colors = ("red", "blue", "lightgreen", "gray", "cyan")
+    cmap = ListedColormap(colors[: len(np.unique(y))])
 
     # plot all samples
     for idx, cl in enumerate(np.unique(y)):
@@ -77,17 +77,12 @@ def plot_classication_data(X, y, test_idx=None):
             c=cmap(idx),
             marker=markers[idx],
             label=cl,
-            edgecolors='black',
-            alpha=0.8
+            edgecolors="black",
+            alpha=0.8,
         )
 
     # highlight test samples
-    test_kwds = dict(
-        c='',
-        edgecolors='black',
-        linewidths=1,
-        label='test set'
-    )
+    test_kwds = dict(c="", edgecolors="black", linewidths=1, label="test set")
     if test_idx is not None:
         X_test, y_test = X[test_idx, :], y[test_idx]
         axes.scatter(X_test[:, 0], X_test[:, 1], **test_kwds)
@@ -113,18 +108,18 @@ def plot_classifiers_decision_regions(classifiers, X, y, test_idx=None):
     return fig, axes
 
 
-def _plot_decision_regions(axes, X, y, classifier, test_idx=None,
-                           resolution=0.02):
+def _plot_decision_regions(axes, X, y, classifier, test_idx=None, resolution=0.02):
     # setup marker generator and color map
-    markers = ('s', 'x', 'o', '^', 'v')
-    colors = ('red', 'blue', 'lightgreen', 'gray', 'cyan')
-    cmap = ListedColormap(colors[:len(np.unique(y))])
+    markers = ("s", "x", "o", "^", "v")
+    colors = ("red", "blue", "lightgreen", "gray", "cyan")
+    cmap = ListedColormap(colors[: len(np.unique(y))])
 
     # plot the decision surface
     x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
     x2_min, x2_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
-                           np.arange(x2_min, x2_max, resolution))
+    xx1, xx2 = np.meshgrid(
+        np.arange(x1_min, x1_max, resolution), np.arange(x2_min, x2_max, resolution)
+    )
     Z = classifier.predict(np.array([xx1.ravel(), xx2.ravel()]).T)
     Z = Z.reshape(xx1.shape)
 
@@ -140,17 +135,12 @@ def _plot_decision_regions(axes, X, y, classifier, test_idx=None,
             c=cmap(idx),
             marker=markers[idx],
             label=cl,
-            edgecolors='black',
-            alpha=0.8
+            edgecolors="black",
+            alpha=0.8,
         )
 
     # highlight test samples
-    test_kwds = dict(
-        c='',
-        edgecolors='black',
-        linewidths=1,
-        label='test set'
-    )
+    test_kwds = dict(c="", edgecolors="black", linewidths=1, label="test set")
     if test_idx is not None:
         X_test, y_test = X[test_idx, :], y[test_idx]
         axes.scatter(X_test[:, 0], X_test[:, 1], **test_kwds)
@@ -172,16 +162,16 @@ def plot_learning_curve(estimators, X, y, cv=10, scoring=None, n_jobs=1):
             cv=cv,
             scoring=None,
             n_jobs=n_jobs,
-            verbose=1
+            verbose=1,
         )
-        xlabel = 'Number of training samples'
+        xlabel = "Number of training samples"
         _plot_curve(
             axes=ax,
             train_sizes=train_sizes,
             train_scores=train_scores,
             test_scores=test_scores,
             xlabel=xlabel,
-            scoring=scoring
+            scoring=scoring,
         )
         ax.set_title(pipeline_name(estimator))
     return fig
@@ -200,12 +190,13 @@ def plot_validation_curve(estimators, X, y, cv=10, **kwargs):
             estimator=estimator,
             X=X,
             y=y,
-            param_name='clf__C',
+            param_name="clf__C",
             param_range=param_range,
             cv=cv,
-            **kwargs)
-        xlabel = 'Parameter C'
-        _plot_curve(ax, param_range, train_scores, test_scores, xlabel, 'log')
+            **kwargs,
+        )
+        xlabel = "Parameter C"
+        _plot_curve(ax, param_range, train_scores, test_scores, xlabel, "log")
         ax.set_title(pipeline_name(estimator))
 
     # fig.tight_layout(pad=1.08, h_pad=None, w_pad=None, rect=None)
@@ -213,51 +204,46 @@ def plot_validation_curve(estimators, X, y, cv=10, **kwargs):
     return fig
 
 
-def _plot_curve(axes, train_sizes, train_scores, test_scores, xlabel,
-                xscale=None, scoring=None):
+def _plot_curve(
+    axes, train_sizes, train_scores, test_scores, xlabel, xscale=None, scoring=None
+):
     if scoring is None:
-        scoring = 'score'
+        scoring = "score"
 
     train_mean = np.mean(train_scores, axis=1)
     train_std = np.std(train_scores, axis=1)
     test_mean = np.mean(test_scores, axis=1)
     test_std = np.std(test_scores, axis=1)
 
-    lbl = 'training {}'.format(scoring)
-    train_kwds = dict(color='blue', marker='o', markersize=5, label=lbl)
+    lbl = f"training {scoring}"
+    train_kwds = dict(color="blue", marker="o", markersize=5, label=lbl)
     axes.plot(train_sizes, train_mean, **train_kwds)
     axes.fill_between(
         train_sizes,
         train_mean + train_std,
         train_mean - train_std,
         alpha=0.15,
-        color='blue'
+        color="blue",
     )
 
-    lbl = 'validation {}'.format(scoring)
-    tst_kwds = dict(
-        color='green',
-        linestyle='--',
-        marker='s',
-        markersize=5,
-        label=lbl
-    )
+    lbl = f"validation {scoring}"
+    tst_kwds = dict(color="green", linestyle="--", marker="s", markersize=5, label=lbl)
     axes.plot(train_sizes, test_mean, **tst_kwds)
     axes.fill_between(
         train_sizes,
         test_mean + test_std,
         test_mean - test_std,
         alpha=0.15,
-        color='green'
+        color="green",
     )
     axes.grid()
     if xscale is not None:
         axes.set_xscale(xscale)
     axes.set_xlabel(xlabel)
     axes.set_ylabel(scoring.capitalize())
-    axes.legend(loc='upper right')
+    axes.legend(loc="upper right")
     # Calculate ymin
     min_train = np.min(train_mean - train_std)
     min_test = np.min(test_mean - test_std)
-    ymin = np.round(min(min_train, min_test) - .05, decimals=1)
+    ymin = np.round(min(min_train, min_test) - 0.05, decimals=1)
     axes.set_ylim([ymin, 1.0])
