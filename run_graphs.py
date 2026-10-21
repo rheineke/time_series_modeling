@@ -1,16 +1,16 @@
 import datetime as dt
 
+import joblib
 import pydotplus
 from sklearn import tree
-from sklearn.externals import joblib
 
-if __name__ == '__main__':
-    clf_name = 'decisiontreeregressor'
+if __name__ == "__main__":
+    clf_name = "decisiontreeregressor"
     model_date = dt.date(2017, 2, 19)
-    pipe_name = 'Pipe_{}'.format(clf_name)
+    pipe_name = f"Pipe_{clf_name}"
 
     # Read pickled/joblib model
-    fp_fmt = 'models/{}-{:%y-%m-%d}.pkl'
+    fp_fmt = "models/{}-{:%y-%m-%d}.pkl"
     tree_pipeline = joblib.load(fp_fmt.format(pipe_name, model_date))
     clf = tree_pipeline.named_steps[clf_name]
 
@@ -20,12 +20,13 @@ if __name__ == '__main__':
         # rotate=True,
         filled=True,
         rounded=True,
-        special_characters=True
+        special_characters=True,
     )
     dot_data = tree.export_graphviz(clf, **export_kwargs)
     graph = pydotplus.graph_from_dot_data(dot_data)
-    png_fmt = 'output/{}-{:%y-%m-%d}.png'
+    png_fmt = "output/{}-{:%y-%m-%d}.png"
     graph.write_png(png_fmt.format(pipe_name, model_date))
 
     # From the command line, run:
-    # dot -Tpdf output/Pipe_decisiontreeregressor.dot -o output/Pipe_decisiontreeregressor.pdf
+    # dot -Tpdf output/Pipe_decisiontreeregressor.dot \
+    #     -o output/Pipe_decisiontreeregressor.pdf

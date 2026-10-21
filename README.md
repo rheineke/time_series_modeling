@@ -3,8 +3,8 @@
 This project uses a large data set to demonstrate a variety of data science and
 machine learning techniques
 
-The [data set] for this machine learning tour is hosted on Google Drive. The 
-file is a compressed text file containing comma-separated data in 10 columns. 
+The [data set] for this machine learning tour is hosted on Google Drive. The
+file is a compressed text file containing comma-separated data in 10 columns.
 The goal is to build a model to predict the 10th column using the first 9
 columns.
 
@@ -23,3 +23,20 @@ The project has 3 modules that can be run:
 
 [Anaconda]: https://www.continuum.io/downloads
 [data set]: https://drive.google.com/open?id=0BwpUS-D5xBA9WnlMYU5sSkRHUmM
+
+## Setup
+```zsh
+conda env create -f environment.yaml
+conda activate time-series-modeling
+pre-commit install
+```
+
+and
+```shell
+pip install -e ".[dev,test]"
+```
+
+## Tests
+```shell
+pytest
+```

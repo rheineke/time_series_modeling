@@ -1,0 +1,9 @@
+name: time-series-modeling
+channels:
+  - conda-forge
+dependencies:
+  - python=3.14.8
+  - pip
+  - pre-commit
+  - pip:
+      - -e ".[dev,test]"  # installs your project via pyproject.toml
