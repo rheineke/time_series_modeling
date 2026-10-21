@@ -1,0 +1,59 @@
+name: PR description
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-description:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check length and mentions of other repos
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq .body > body.md
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/commits" --paginate \
+            --jq '.[].commit.message' > commits.txt
+          gh api "users/$GITHUB_REPOSITORY_OWNER/repos" --paginate \
+            --jq '.[].name' > repos.txt
+          python3 - <<'EOF'
+          import os
+          import re
+          import sys
+          from pathlib import Path
+
+          MAX_WORDS = 120
+          owner, repo = os.environ["GITHUB_REPOSITORY"].split("/")
+          body = Path("body.md").read_text()
+          commits = Path("commits.txt").read_text()
+          errors = []
+
+          prose = "\n".join(l for l in body.splitlines() if "Generated with" not in l)
+          words = len(prose.split())
+          if words > MAX_WORDS:
+              errors.append(f"description has {words} words; keep it to {MAX_WORDS}")
+
+          for name in Path("repos.txt").read_text().split():
+              if name.lower() == repo.lower():
+                  continue
+              # Short all-letter names ("make") are ordinary words; catch
+              # them only as owner/name.
+              bare = "" if len(name) <= 4 and name.isalpha() else "?"
+              pattern = re.compile(
+                  rf"(?<![\w.-])(?:{re.escape(owner)}/){bare}{re.escape(name)}(?![\w-])",
+                  re.IGNORECASE,
+              )
+              for label, text in (("description", body), ("a commit message", commits)):
+                  if pattern.search(text):
+                      errors.append(f"{label} mentions another repo: {name}")
+
+          for error in errors:
+              print(f"::error::{error}")
+          sys.exit(1 if errors else 0)
+          EOF
