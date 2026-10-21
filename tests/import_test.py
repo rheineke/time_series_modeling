@@ -6,7 +6,6 @@ import pytest
 
 MODULES = [
     "data",
-    "ipsh",
     "run_eda",
     "run_graphs",
     "run_model_fit",
